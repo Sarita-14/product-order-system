@@ -1,8 +1,15 @@
-export interface ApiResponse<T = any> {
-  success: boolean;
+export interface ApiSuccessResponse<T> {
+  success: true;
+  statusCode: number;
+  data: T;
+  timestamp: string;
+}
+
+export interface ApiErrorResponse {
+  success: false;
   statusCode: number;
   message: string;
-  data?: T;
-  errors?: any;
+  errors?: string[];
+  path: string;
   timestamp: string;
 }
