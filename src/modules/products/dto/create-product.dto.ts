@@ -1,19 +1,24 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsNotEmpty, IsNumber, IsOptional, IsPositive, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateProductDto {
+  /** @example "Wireless Mouse" */
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name: string;
 
-  @IsString()
+  /** @example "2.4 GHz ergonomic mouse" */
   @IsOptional()
+  @IsString()
   description?: string;
 
-  @IsNumber()
-  @Min(0)
+  /** @example 499.99 */
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @IsPositive()
   price: number;
 
-  @IsNumber()
+  /** @example 50 */
+  @IsInt()
   @Min(0)
   stockQuantity: number;
 }
