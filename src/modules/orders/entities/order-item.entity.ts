@@ -1,35 +1,30 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
-import { Order } from './order.entity';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { decimalTransformer } from '../../../common/transformers/decimal.transformer';
 import { Product } from '../../products/entities/product.entity';
+import { Order } from './order.entity';
 
 @Entity('order_items')
 export class OrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', name: 'order_id' })
+  @Column({ name: 'order_id', type: 'uuid' })
   orderId: string;
 
-  @Column({ type: 'uuid', name: 'product_id' })
+  @Column({ name: 'product_id', type: 'uuid' })
   productId: string;
 
   @Column({ type: 'integer' })
   quantity: number;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2, name: 'unit_price' })
+  /** Price copied at order time; later product price changes don't affect this order */
+  @Column({ name: 'unit_price', type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
   unitPrice: number;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2 })
+  @Column({ type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
   subtotal: number;
 
-  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 
   @ManyToOne(() => Order, (order) => order.items, { onDelete: 'CASCADE' })
