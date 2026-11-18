@@ -32,10 +32,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const { status, message, errors } = this.resolve(exception);
 
+        // Unexpected errors: log the stack trace (every request is already logged by LoggerMiddleware)
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(`${req.method} ${req.originalUrl}`, (exception as Error)?.stack);
-    } else {
-      this.logger.warn(`${req.method} ${req.originalUrl} ${status} - ${message}`);
     }
 
     const body: ApiErrorResponse = {
