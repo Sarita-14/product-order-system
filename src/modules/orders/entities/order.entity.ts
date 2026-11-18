@@ -1,51 +1,55 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  JoinColumn,
   ManyToOne,
   OneToMany,
-  JoinColumn,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+import { decimalTransformer } from '../../../common/transformers/decimal.transformer';
 import { User } from '../../users/entities/user.entity';
-import { OrderItem } from './order-item.entity';
 import { OrderStatus } from '../enums/order-status.enum';
+import { OrderItem } from './order-item.entity';
 
 @Entity('orders')
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', name: 'user_id' })
+  @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
 
-  @Column({ type: 'varchar', length: 255, name: 'customer_name' })
+  /** Snapshot at order time, so later profile edits don't rewrite history */
+  @Column({ name: 'customer_name', type: 'varchar', length: 255 })
   customerName: string;
 
-  @Column({ type: 'varchar', length: 255, name: 'customer_email' })
+  @Column({ name: 'customer_email', type: 'varchar', length: 255 })
   customerEmail: string;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2, name: 'total_amount' })
+  @Column({ name: 'total_amount', type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
   totalAmount: number;
 
   @Column({
     type: 'enum',
     enum: OrderStatus,
+    enumName: 'order_status_enum', // matches the type created by the first migration
     default: OrderStatus.CONFIRMED,
   })
   status: OrderStatus;
 
-  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
   updatedAt: Date;
 
   @ManyToOne(() => User, (user) => user.orders, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
+  /** cascade: saving an Order also inserts its items in the same transaction */
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
   items: OrderItem[];
 }

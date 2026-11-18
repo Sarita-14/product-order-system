@@ -1,12 +1,13 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { Order } from '../entities/order.entity';
-import { OrderItem } from '../entities/order-item.entity';
-import { User } from '../../users/entities/user.entity';
-import { Product } from '../../products/entities/product.entity';
-import { CreateOrderDto } from '../dto/create-order.dto';
-import { OrderStatus } from '../enums/order-status.enum';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { DataSource, EntityManager, In } from 'typeorm';
+import { toMoney } from '../../../common/transformers/decimal.transformer';
 import { MailService } from '../../mail/services/mail.service';
+import { Product } from '../../products/entities/product.entity';
+import { User } from '../../users/entities/user.entity';
+import { CreateOrderDto } from '../dto/create-order.dto';
+import { OrderItem } from '../entities/order-item.entity';
+import { Order } from '../entities/order.entity';
+import { OrderStatus } from '../enums/order-status.enum';
 
 @Injectable()
 export class OrdersService {
@@ -16,111 +17,81 @@ export class OrdersService {
   ) {}
 
   async create(dto: CreateOrderDto): Promise<Order> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    // Everything inside runs in ONE transaction: any throw => full rollback
+    // (no order, no items, no stock change).
+    const order = await this.dataSource.transaction((manager) => this.placeOrder(manager, dto));
 
-    try {
-      // 1. Verify User
-      const user = await queryRunner.manager.findOne<User>(User, { where: { id: dto.userId } });
-      if (!user) {
-        throw new NotFoundException(`User #${dto.userId} not found`);
-      }
-
-      let totalAmount = 0;
-      const orderItemsToSave: OrderItem[] = [];
-      const emailItems: Array<{ name: string; quantity: number; unitPrice: number; subtotal: number }> = [];
-
-      // 2. Validate and Deduct Stock for each Product
-      for (const item of dto.items) {
-        const product = await queryRunner.manager.findOne<Product>(Product, {
-          where: { id: item.productId, isActive: true },
-        });
-
-        if (!product) {
-          throw new NotFoundException(`Product #${item.productId} not found or inactive`);
-        }
-
-        if (product.stockQuantity < item.quantity) {
-          throw new BadRequestException(
-            `Insufficient stock for product "${product.name}". Available: ${product.stockQuantity}`,
-          );
-        }
-
-        // Deduct Stock
-        product.stockQuantity -= item.quantity;
-        await queryRunner.manager.save(product);
-
-        const unitPrice = Number(product.price);
-        const subtotal = unitPrice * item.quantity;
-        totalAmount += subtotal;
-
-        const orderItem = new OrderItem();
-        orderItem.productId = product.id;
-        orderItem.quantity = item.quantity;
-        orderItem.unitPrice = unitPrice;
-        orderItem.subtotal = subtotal;
-
-        orderItemsToSave.push(orderItem);
-        emailItems.push({
-          name: product.name,
-          quantity: item.quantity,
-          unitPrice,
-          subtotal,
-        });
-      }
-
-      // 3. Create and Save Order
-      const order = new Order();
-      order.userId = user.id;
-      order.customerName = user.username;
-      order.customerEmail = user.email;
-      order.totalAmount = totalAmount;
-      order.status = OrderStatus.CONFIRMED;
-
-      const savedOrder = await queryRunner.manager.save(order);
-
-      // 4. Attach orderId and Save Order Items
-      for (const item of orderItemsToSave) {
-        item.orderId = savedOrder.id;
-      }
-      await queryRunner.manager.save(OrderItem, orderItemsToSave);
-
-      await queryRunner.commitTransaction();
-
-      // 5. Send Email Asynchronously
-      this.mailService.sendOrderConfirmation(
-        savedOrder.customerEmail,
-        savedOrder.customerName,
-        savedOrder.id,
-        savedOrder.totalAmount,
-        emailItems,
-      );
-
-      savedOrder.items = orderItemsToSave;
-      return savedOrder;
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
+    // After commit, fire-and-forget: an email failure must not fail the order.
+    void this.mailService.sendOrderConfirmation(order);
+    return order;
   }
 
-  async findAll(): Promise<Order[]> {
+  findAll(): Promise<Order[]> {
     return this.dataSource.getRepository(Order).find({
-      relations: { items: { product: true }, user: true },
+      relations: { items: { product: true } },
+      order: { createdAt: 'DESC' },
     });
   }
 
   async findOne(id: string): Promise<Order> {
     const order = await this.dataSource.getRepository(Order).findOne({
       where: { id },
-      relations: { items: { product: true }, user: true },
+      relations: { items: { product: true } },
     });
-    if (!order) {
-      throw new NotFoundException(`Order #${id} not found`);
-    }
+    if (!order) throw new NotFoundException(`Order ${id} not found`);
     return order;
+  }
+
+  private async placeOrder(manager: EntityManager, dto: CreateOrderDto): Promise<Order> {
+    const user = await manager.findOneBy(User, { id: dto.userId });
+    if (!user) throw new NotFoundException(`User ${dto.userId} not found`);
+
+    const products = await this.lockProducts(manager, dto.items.map((i) => i.productId));
+
+    const items = dto.items.map(({ productId, quantity }) => {
+      const product = products.get(productId);
+      if (!product) throw new NotFoundException(`Product ${productId} not found`);
+      if (product.stockQuantity < quantity) {
+        throw new BadRequestException(
+          `Insufficient stock for "${product.name}": requested ${quantity}, available ${product.stockQuantity}`,
+        );
+      }
+
+      product.stockQuantity -= quantity;
+      return manager.create(OrderItem, {
+        product,
+        productId,
+        quantity,
+        unitPrice: product.price,
+        subtotal: toMoney(product.price * quantity),
+      });
+    });
+
+    await manager.save([...products.values()]); // stock deduction
+
+    return manager.save(
+      manager.create(Order, {
+        userId: user.id,
+        customerName: user.username,
+        customerEmail: user.email,
+        totalAmount: toMoney(items.reduce((sum, item) => sum + item.subtotal, 0)),
+        status: OrderStatus.CONFIRMED,
+        items,
+      }),
+    );
+  }
+
+  /**
+   * SELECT ... FOR UPDATE: other transactions ordering the same products wait
+   * until we commit, so two orders can never both spend the last unit.
+   * Sorting by id keeps lock order consistent and avoids deadlocks.
+   */
+  private async lockProducts(manager: EntityManager, ids: string[]): Promise<Map<string, Product>> {
+    const products = await manager.find(Product, {
+      where: { id: In(ids), isActive: true },
+      order: { id: 'ASC' },
+      lock: { mode: 'pessimistic_write' },
+    });
+    return new Map(products.map((p) => [p.id, p]));
   }
 }
