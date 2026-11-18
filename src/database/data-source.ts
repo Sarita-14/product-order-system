@@ -1,7 +1,10 @@
-import { DataSource, DataSourceOptions } from 'typeorm';
+import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { DataSource, DataSourceOptions } from 'typeorm';
 
-dotenv.config();
+dotenv.config({
+  path: path.resolve(process.cwd(), '.env'),
+});
 
 export const dataSourceOptions: DataSourceOptions = {
   type: 'postgres',
@@ -10,9 +13,14 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.DB_USERNAME || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   database: process.env.DB_NAME || 'product_order_db',
-  entities: [__dirname + '/../modules/**/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/migrations/*{.ts,.js}'],
-  synchronize: false, // In production, migrations handle changes
+  entities: [
+    path.join(__dirname, '../modules/**/*.entity{.ts,.js}'),
+  ],
+  migrations: [
+    path.join(__dirname, 'migrations/*{.ts,.js}'),
+  ],
+  migrationsTableName: 'migrations',
+  synchronize: false,
   logging: process.env.NODE_ENV === 'development',
 };
 

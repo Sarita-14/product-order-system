@@ -9,6 +9,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+app.setGlobalPrefix(process.env.API_PREFIX || 'api/v1');
 
   const globalPrefix = 'api/v1';
   app.setGlobalPrefix(globalPrefix);
