@@ -7,10 +7,6 @@ enum Environment {
   Test = 'test',
 }
 
-/**
- * Schema for .env. The app refuses to start if a required variable is
- * missing or has the wrong type, instead of failing later at runtime.
- */
 class EnvironmentVariables {
   @IsEnum(Environment)
   NODE_ENV: Environment = Environment.Development;

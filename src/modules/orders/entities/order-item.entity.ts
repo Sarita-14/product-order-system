@@ -17,7 +17,6 @@ export class OrderItem {
   @Column({ type: 'integer' })
   quantity: number;
 
-  /** Price copied at order time; later product price changes don't affect this order */
   @Column({ name: 'unit_price', type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
   unitPrice: number;
 

@@ -15,11 +15,11 @@ export class MailService {
     this.from = config.getOrThrow<string>('EMAIL_FROM');
   }
 
-  /** Never throws: callers can fire-and-forget without risking the order. */
+  
   async sendOrderConfirmation(order: Order): Promise<void> {
     try {
       const { subject, html } = orderConfirmationTemplate(order);
-      // Resend returns { data, error } instead of throwing on API errors
+     
       const { error } = await this.resend.emails.send({ from: this.from, to: order.customerEmail, subject, html });
       if (error) throw new Error(error.message);
 

@@ -4,7 +4,7 @@ import { ApiTags } from '@nestjs/swagger';
 @ApiTags('App')
 @Controller()
 export class AppController {
-  /** Base URL: shows the API is running and where to find things. */
+ 
   @Get()
   getInfo() {
     return {

@@ -49,7 +49,6 @@ export class Order {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  /** cascade: saving an Order also inserts its items in the same transaction */
   @OneToMany(() => OrderItem, (item) => item.order, { cascade: true })
   items: OrderItem[];
 }

@@ -13,7 +13,6 @@ export class OrderItemDto {
 }
 
 export class CreateOrderDto {
-  /** Customer placing the order; name and email are taken from this user. */
   @IsUUID()
   userId: string;
 

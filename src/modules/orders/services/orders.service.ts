@@ -17,8 +17,6 @@ export class OrdersService {
   ) {}
 
   async create(dto: CreateOrderDto): Promise<Order> {
-    // Everything inside runs in ONE transaction: any throw => full rollback
-    // (no order, no items, no stock change).
     const order = await this.dataSource.transaction((manager) => this.placeOrder(manager, dto));
 
     // After commit, fire-and-forget: an email failure must not fail the order.
@@ -81,11 +79,7 @@ export class OrdersService {
     );
   }
 
-  /**
-   * SELECT ... FOR UPDATE: other transactions ordering the same products wait
-   * until we commit, so two orders can never both spend the last unit.
-   * Sorting by id keeps lock order consistent and avoids deadlocks.
-   */
+
   private async lockProducts(manager: EntityManager, ids: string[]): Promise<Map<string, Product>> {
     const products = await manager.find(Product, {
       where: { id: In(ids), isActive: true },

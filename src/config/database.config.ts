@@ -1,10 +1,6 @@
 import { join } from 'path';
 import { DataSourceOptions } from 'typeorm';
 
-/**
- * Single source of truth for DB settings.
- * Used by the Nest app (DatabaseModule) and by the TypeORM CLI (data-source.ts).
- */
 export const databaseConfig = (): DataSourceOptions => ({
   type: 'postgres',
   host: process.env.DB_HOST,
