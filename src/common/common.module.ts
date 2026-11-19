@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule, ValidationPipe } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  ValidationPipe,
+} from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { TransformInterceptor } from './interceptors/transform.interceptor';
@@ -10,7 +15,7 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
       provide: APP_PIPE,
       useValue: new ValidationPipe({
         whitelist: true, // strip properties not in the DTO
-        //all api calls 
+        //all api calls
         forbidNonWhitelisted: true, // ...and reject the request if any were sent
         transform: true, // turn plain JSON into DTO class instances
       }),

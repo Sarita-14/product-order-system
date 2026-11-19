@@ -6,18 +6,16 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
   const config = app.get(ConfigService);
 
-  const port = Number(config.getOrThrow<string>('PORT'));
+  const port = config.getOrThrow<number>('PORT');
   const prefix = config.getOrThrow<string>('API_PREFIX');
-  const rootPath = config.getOrThrow<string>('API_ROOT_PATH');
+  const host = config.getOrThrow<string>('APP_HOST');
   const swaggerPath = config.getOrThrow<string>('SWAGGER_PATH');
 
+  // every route gets the prefix, except the root health check
   app.setGlobalPrefix(prefix, {
-    exclude: [
-      { path: rootPath, method: RequestMethod.GET },
-    ],
+    exclude: [{ path: '/', method: RequestMethod.GET }],
   });
 
   const swaggerConfig = new DocumentBuilder()
@@ -27,18 +25,13 @@ async function bootstrap() {
     )
     .setVersion('1.0')
     .build();
-
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-
-  SwaggerModule.setup(
-    `${prefix}/${swaggerPath}`,
-    app,
-    document,
+  SwaggerModule.setup(swaggerPath, app, () =>
+    SwaggerModule.createDocument(app, swaggerConfig),
   );
 
   await app.listen(port);
-
-  Logger.log(`Application running on port ${port}`, 'Bootstrap');
+  const appUrl = `http://${host}:${port}`;
+  Logger.log(`App:     ${appUrl}`, 'Bootstrap');
+  Logger.log(`Swagger: ${appUrl}/${swaggerPath}`, 'Bootstrap');
 }
-
 void bootstrap();

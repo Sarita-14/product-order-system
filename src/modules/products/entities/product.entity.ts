@@ -22,7 +22,12 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   price: number;
 
   @Column({ name: 'stock_quantity', type: 'integer', default: 0 })

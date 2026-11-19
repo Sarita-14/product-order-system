@@ -1,5 +1,12 @@
 import { plainToInstance } from 'class-transformer';
-import { IsEmail, IsEnum, IsInt, IsOptional, IsString, validateSync } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  validateSync,
+} from 'class-validator';
 
 enum Environment {
   Development = 'development',
@@ -15,7 +22,10 @@ class EnvironmentVariables {
   PORT: number = 3000;
 
   @IsString()
-  API_PREFIX: string = 'api/v1';
+  APP_HOST: string = 'localhost';
+
+  @IsString()
+  SWAGGER_PATH: string = 'api/v1/docs';
 
   @IsString()
   DB_HOST: string;
@@ -48,7 +58,9 @@ export function validate(config: Record<string, unknown>) {
 
   if (errors.length > 0) {
     const details = errors.flatMap((e) => Object.values(e.constraints ?? {}));
-    throw new Error(`Invalid environment variables:\n- ${details.join('\n- ')}`);
+    throw new Error(
+      `Invalid environment variables:\n- ${details.join('\n- ')}`,
+    );
   }
   return validated;
 }

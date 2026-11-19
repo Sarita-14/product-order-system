@@ -11,6 +11,6 @@ export const databaseConfig = (): DataSourceOptions => ({
   entities: [join(__dirname, '../modules/**/*.entity{.ts,.js}')],
   migrations: [join(__dirname, '../database/migrations/*{.ts,.js}')],
   synchronize: false, // schema changes only through migrations
-  logging: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+  logging:
+    process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 });
-//nest js practices in env with joi
