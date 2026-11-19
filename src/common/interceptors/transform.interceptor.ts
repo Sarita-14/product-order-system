@@ -3,7 +3,6 @@ import { Response } from 'express';
 import { Observable, map } from 'rxjs';
 import { ApiSuccessResponse } from '../interfaces/api-response.interface';
 
-/** Wraps every successful response as { success, statusCode, data, timestamp }. */
 @Injectable()
 export class TransformInterceptor<T> implements NestInterceptor<T, ApiSuccessResponse<T>> {
   intercept(context: ExecutionContext, next: CallHandler<T>): Observable<ApiSuccessResponse<T>> {

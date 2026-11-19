@@ -10,11 +10,7 @@ export class UsersService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
-
-  /**
-   * No "does username exist?" pre-check: two parallel requests could both pass it.
-   * The UNIQUE constraint decides, and the global filter turns it into a 409.
-   */
+  
   create(dto: CreateUserDto): Promise<User> {
     return this.userRepository.save(this.userRepository.create(dto));
   }

@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { DataSource, EntityManager, In } from 'typeorm';
 import { toMoney } from '../../../common/transformers/decimal.transformer';
 import { MailService } from '../../mail/services/mail.service';
@@ -14,14 +19,20 @@ export class OrdersService {
   constructor(
     private readonly dataSource: DataSource,
     private readonly mailService: MailService,
+    //we are using DataSource: To communicate with the database, MailService: To send emails.
   ) {}
 
   async create(dto: CreateOrderDto): Promise<Order> {
     const order = await this.dataSource.transaction((manager) => this.placeOrder(manager, dto));
-
-    // After commit, fire-and-forget: an email failure must not fail the order.
+//transaction krne ke liye //Check user.
+// Check products.
+// Deduct stock.
+// Save order.
+// Save order items
     void this.mailService.sendOrderConfirmation(order);
+    //transaction done then it will confirmation email dega 
     return order;
+    //return create order 
   }
 
   findAll(): Promise<Order[]> {
@@ -29,8 +40,9 @@ export class OrdersService {
       relations: { items: { product: true } },
       order: { createdAt: 'DESC' },
     });
+    //method fetches all orders from the database
   }
-
+//ye ek  order k liye 
   async findOne(id: string): Promise<Order> {
     const order = await this.dataSource.getRepository(Order).findOne({
       where: { id },
@@ -39,12 +51,21 @@ export class OrdersService {
     if (!order) throw new NotFoundException(`Order ${id} not found`);
     return order;
   }
-
+//main logic 
   private async placeOrder(manager: EntityManager, dto: CreateOrderDto): Promise<Order> {
+    //Check whether the user exists
     const user = await manager.findOneBy(User, { id: dto.userId });
     if (!user) throw new NotFoundException(`User ${dto.userId} not found`);
+//user.repo file 
+    const productIds = dto.items.map((item) => item.productId);
 
-    const products = await this.lockProducts(manager, dto.items.map((i) => i.productId));
+if (new Set(productIds).size !== productIds.length) {
+  throw new ConflictException(
+    'Duplicate products are not allowed in the same order',
+  );
+}
+
+const products = await this.lockProducts(manager, productIds);
 
     const items = dto.items.map(({ productId, quantity }) => {
       const product = products.get(productId);
@@ -66,7 +87,7 @@ export class OrdersService {
     });
 
     await manager.save([...products.values()]); // stock deduction
-
+//creates the main Order record
     return manager.save(
       manager.create(Order, {
         userId: user.id,
@@ -79,7 +100,7 @@ export class OrdersService {
     );
   }
 
-
+//Only active products are selected
   private async lockProducts(manager: EntityManager, ids: string[]): Promise<Map<string, Product>> {
     const products = await manager.find(Product, {
       where: { id: In(ids), isActive: true },

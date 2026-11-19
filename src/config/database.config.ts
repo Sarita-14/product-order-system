@@ -13,3 +13,4 @@ export const databaseConfig = (): DataSourceOptions => ({
   synchronize: false, // schema changes only through migrations
   logging: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
 });
+//nest js practices in env with joi

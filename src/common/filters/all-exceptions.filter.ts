@@ -1,3 +1,5 @@
+//this file we use it for the database error handling shown by the typeORM 
+//duplicate unique value nd all identify krega 
 import {
   ArgumentsHost,
   Catch,
@@ -9,20 +11,16 @@ import {
 import { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
 import { ApiErrorResponse } from '../interfaces/api-response.interface';
-
-/** Postgres error codes we translate into client-friendly HTTP errors. */
+//postgre error codes 
 const PG_ERRORS: Record<string, { status: HttpStatus; message: string }> = {
   '23505': { status: HttpStatus.CONFLICT, message: 'Resource already exists' },
   '23503': { status: HttpStatus.CONFLICT, message: 'Resource is referenced by other records' },
   '23514': { status: HttpStatus.BAD_REQUEST, message: 'Value violates a data constraint' },
 };
-
-/**
- * Last line of defence: every error thrown anywhere in the request pipeline
- * ends up here and is returned in the same JSON shape.
- */
+//tells to catch the error using filter 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  //Logger : record important errors in the server console 
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
@@ -32,11 +30,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     const { status, message, errors } = this.resolve(exception);
 
-        // Unexpected errors: log the stack trace (every request is already logged by LoggerMiddleware)
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(`${req.method} ${req.originalUrl}`, (exception as Error)?.stack);
     }
-
+//error response bnayenge 
     const body: ApiErrorResponse = {
       success: false,
       statusCode: status,
@@ -47,13 +44,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     };
     res.status(status).json(body);
   }
-
+//identifies the type of exception and decides what response should be returned.
   private resolve(exception: unknown): { status: number; message: string; errors?: string[] } {
+    //we have codition sunch as Condition 1: HttpException 
     if (exception instanceof HttpException) {
       const response = exception.getResponse();
       const raw = typeof response === 'string' ? response : (response as { message?: unknown }).message;
 
-      // ValidationPipe returns an array of messages
       if (Array.isArray(raw)) {
         return { status: exception.getStatus(), message: 'Validation failed', errors: raw };
       }
@@ -66,7 +63,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       if (known) return { status: known.status, message: known.message };
     }
 
-    // Never leak internal error details to the client
+
     return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: 'Internal server error' };
   }
 }
