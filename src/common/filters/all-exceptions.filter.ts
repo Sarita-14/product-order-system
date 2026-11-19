@@ -1,55 +1,69 @@
+//this file we use it for the database error handling shown by the typeORM 
+//duplicate unique value nd all identify krega 
 import {
-  ExceptionFilter,
-  Catch,
   ArgumentsHost,
+  Catch,
+  ExceptionFilter,
   HttpException,
   HttpStatus,
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-
+import { QueryFailedError } from 'typeorm';
+import { ApiErrorResponse } from '../interfaces/api-response.interface';
+//postgre error codes 
+const PG_ERRORS: Record<string, { status: HttpStatus; message: string }> = {
+  '23505': { status: HttpStatus.CONFLICT, message: 'Resource already exists' },
+  '23503': { status: HttpStatus.CONFLICT, message: 'Resource is referenced by other records' },
+  '23514': { status: HttpStatus.BAD_REQUEST, message: 'Value violates a data constraint' },
+};
+//tells to catch the error using filter 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
+  //Logger : record important errors in the server console 
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const req = ctx.getRequest<Request>();
+    const res = ctx.getResponse<Response>();
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error occurred';
-    let errors = null;
+    const { status, message, errors } = this.resolve(exception);
 
-    if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      const exceptionResponse = exception.getResponse();
-
-      if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
-        message = (exceptionResponse as any).message || exception.message;
-        errors = (exceptionResponse as any).errors || null;
-      } else {
-        message = exceptionResponse as string;
-      }
-    } else if (exception instanceof Error) {
-      message = exception.message;
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(`${req.method} ${req.originalUrl}`, (exception as Error)?.stack);
     }
-
-    // Log the error for the developer to see in the terminal
-    this.logger.error(
-      `[${request.method}] ${request.url} - Status: ${status} - Error: ${JSON.stringify(
-        message,
-      )}`,
-    );
-
-    // Send the clean JSON to the client
-    response.status(status).json({
+//error response bnayenge 
+    const body: ApiErrorResponse = {
       success: false,
       statusCode: status,
-      message: Array.isArray(message) ? message[0] : message,
-      errors: Array.isArray(message) ? message : errors,
+      message,
+      ...(errors && { errors }),
+      path: req.originalUrl,
       timestamp: new Date().toISOString(),
-      path: request.url,
-    });
+    };
+    res.status(status).json(body);
+  }
+//identifies the type of exception and decides what response should be returned.
+  private resolve(exception: unknown): { status: number; message: string; errors?: string[] } {
+    //we have codition sunch as Condition 1: HttpException 
+    if (exception instanceof HttpException) {
+      const response = exception.getResponse();
+      const raw = typeof response === 'string' ? response : (response as { message?: unknown }).message;
+
+      if (Array.isArray(raw)) {
+        return { status: exception.getStatus(), message: 'Validation failed', errors: raw };
+      }
+      return { status: exception.getStatus(), message: String(raw ?? exception.message) };
+    }
+
+    if (exception instanceof QueryFailedError) {
+      const code = (exception.driverError as { code?: string })?.code ?? '';
+      const known = PG_ERRORS[code];
+      if (known) return { status: known.status, message: known.message };
+    }
+
+
+    return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: 'Internal server error' };
   }
 }

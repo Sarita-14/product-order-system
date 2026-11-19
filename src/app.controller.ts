@@ -1,12 +1,23 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('App')
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
 
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  getInfo() {
+    return {
+      name: 'Product & Order Management API',
+      version: '1.0',
+      message: 'Application is running',
+      docs: '/api/v1/docs',
+      //no repitition 
+      endpoints: {
+        users: '/api/v1/users',
+        products: '/api/v1/products',
+        orders: '/api/v1/orders',
+      },
+    };
   }
 }

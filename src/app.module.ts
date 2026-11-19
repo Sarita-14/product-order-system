@@ -1,21 +1,25 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { dataSourceOptions } from './database/data-source';
+import { ConfigModule } from '@nestjs/config';
+import { validate } from './config/env.validation';
+import { CommonModule } from './common/common.module';
+import { DatabaseModule } from './database/database.module';
 import { UsersModule } from './modules/users/users.module';
 import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { MailModule } from './modules/mail/mail.module';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      ...dataSourceOptions,
-      autoLoadEntities: true,
-    }),
+    ConfigModule.forRoot({ isGlobal: true, validate }),
+    CommonModule,
+    DatabaseModule,
     UsersModule,
     ProductsModule,
     OrdersModule,
     MailModule,
   ],
+  controllers: [AppController],
+
 })
 export class AppModule {}
