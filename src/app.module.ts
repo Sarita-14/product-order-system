@@ -20,6 +20,5 @@ import { AppController } from './app.controller';
     MailModule,
   ],
   controllers: [AppController],
-
 })
 export class AppModule {}

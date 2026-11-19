@@ -1,7 +1,15 @@
 import { Type } from 'class-transformer';
-import { ArrayNotEmpty, ArrayUnique, IsArray, IsInt, IsUUID, Min, ValidateNested } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 //we have class validator
-//jo user se data aayega it will validate 
+//jo user se data aayega it will validate
 export class OrderItemDto {
   /** @example "2648f9ad-2c33-422c-b14f-acf3b82fa308" */
   @IsUUID()

@@ -1,42 +1,39 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Injectable } from '@nestjs/common';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { Product } from '../entities/product.entity';
-
+import { CreateProductUseCase } from '../usecases/create-product.usecase';
+import { DeleteProductUseCase } from '../usecases/delete-product.usecase';
+import { GetProductUseCase } from '../usecases/get-product.usecase';
+import { GetProductsUseCase } from '../usecases/get-products.usecase';
+import { UpdateProductUseCase } from '../usecases/update-product.usecase';
 @Injectable()
 export class ProductsService {
   constructor(
-    @InjectRepository(Product)
-    private readonly productRepository: Repository<Product>,
+    private readonly createProductUseCase: CreateProductUseCase,
+    private readonly getProductsUseCase: GetProductsUseCase,
+    private readonly getProductUseCase: GetProductUseCase,
+    private readonly updateProductUseCase: UpdateProductUseCase,
+    private readonly deleteProductUseCase: DeleteProductUseCase,
   ) {}
 
   create(dto: CreateProductDto): Promise<Product> {
-    return this.productRepository.save(this.productRepository.create(dto));
+    return this.createProductUseCase.execute(dto);
   }
 
   findAll(): Promise<Product[]> {
-    return this.productRepository.find({
-      where: { isActive: true },
-      order: { createdAt: 'DESC' },
-    });
+    return this.getProductsUseCase.execute();
   }
 
-  async findOne(id: string): Promise<Product> {
-    const product = await this.productRepository.findOneBy({ id, isActive: true });
-    if (!product) throw new NotFoundException(`Product ${id} not found`);
-    return product;
+  findOne(id: string): Promise<Product> {
+    return this.getProductUseCase.execute(id);
   }
 
-  async update(id: string, dto: UpdateProductDto): Promise<Product> {
-    const product = await this.findOne(id);
-    return this.productRepository.save(this.productRepository.merge(product, dto));
+  update(id: string, dto: UpdateProductDto): Promise<Product> {
+    return this.updateProductUseCase.execute(id, dto);
   }
 
-  /** Soft delete: products referenced by past orders must not disappear. */
-  async remove(id: string): Promise<void> {
-    const product = await this.findOne(id);
-    await this.productRepository.update(product.id, { isActive: false });
+  remove(id: string): Promise<void> {
+    return this.deleteProductUseCase.execute(id);
   }
 }

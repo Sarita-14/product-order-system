@@ -1,4 +1,11 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { decimalTransformer } from '../../../common/transformers/decimal.transformer';
 import { Product } from '../../products/entities/product.entity';
 import { Order } from './order.entity';
@@ -17,10 +24,21 @@ export class OrderItem {
   @Column({ type: 'integer' })
   quantity: number;
 
-  @Column({ name: 'unit_price', type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
+  @Column({
+    name: 'unit_price',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   unitPrice: number;
 
-  @Column({ type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
+  @Column({
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   subtotal: number;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
@@ -30,7 +48,9 @@ export class OrderItem {
   @JoinColumn({ name: 'order_id' })
   order: Order;
 
-  @ManyToOne(() => Product, (product) => product.orderItems, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Product, (product) => product.orderItems, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'product_id' })
   product: Product;
 }

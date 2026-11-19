@@ -16,10 +16,10 @@ export class User {
   @Column({ type: 'varchar', length: 100, unique: true })
   username!: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, unique: true })
   email!: string;
 
-  @Column({ name: 'phone_number', type: 'varchar', length: 20 })
+  @Column({ name: 'phone_number', type: 'varchar', length: 20, unique: true })
   phoneNumber!: string;
 
   @CreateDateColumn({ name: 'created_at' })

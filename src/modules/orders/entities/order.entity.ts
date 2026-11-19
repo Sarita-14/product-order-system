@@ -28,7 +28,13 @@ export class Order {
   @Column({ name: 'customer_email', type: 'varchar', length: 255 })
   customerEmail: string;
 
-  @Column({ name: 'total_amount', type: 'numeric', precision: 10, scale: 2, transformer: decimalTransformer })
+  @Column({
+    name: 'total_amount',
+    type: 'numeric',
+    precision: 10,
+    scale: 2,
+    transformer: decimalTransformer,
+  })
   totalAmount: number;
 
   @Column({
