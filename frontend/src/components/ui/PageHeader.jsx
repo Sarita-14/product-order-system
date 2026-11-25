@@ -1,0 +1,14 @@
+// Page title + optional subtitle on the left, action buttons (children) on the right.
+function PageHeader({ title, subtitle, children }) {
+  return (
+    <header className="page-header">
+      <div>
+        <h1>{title}</h1>
+        {subtitle && <p className="muted">{subtitle}</p>}
+      </div>
+      {children && <div className="page-actions">{children}</div>}
+    </header>
+  );
+}
+
+export default PageHeader;
