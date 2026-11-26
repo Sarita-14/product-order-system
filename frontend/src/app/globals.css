@@ -1,11 +1,25 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   FILE: app/globals.css — styles for the WHOLE site (loaded once by app/layout.tsx).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+/* Load Tailwind CSS: this makes all the small class names (px-4, rounded-lg...) work. */
 @import "tailwindcss";
 
-:root {
-  color-scheme: light dark;
+/* @theme = our own design values. Tailwind turns each one into classes,
+   e.g. --color-brand-600 gives us "bg-brand-600", "text-brand-600"... */
+@theme {
+  --color-brand-50: #eef2ff;   /* very light blue (hover backgrounds) */
+  --color-brand-100: #e0e7ff;  /* light blue (focus ring, avatar) */
+  --color-brand-600: #4f46e5;  /* main brand blue (buttons, links) */
+  --color-brand-700: #4338ca;  /* darker blue (button hover) */
+
+  /* The font: use the computer's own system font (fast, nothing to download). */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
+/* The page background and default text colour. */
 body {
-  background: light-dark(#ffffff, #0a0a0a);
-  color: light-dark(#171717, #ededed);
-  font-family: system-ui, sans-serif;
+  background-color: var(--color-slate-50); /* very light grey page */
+  color: var(--color-slate-900);           /* almost-black text */
+  -webkit-font-smoothing: antialiased;     /* smoother text on Mac screens */
 }
