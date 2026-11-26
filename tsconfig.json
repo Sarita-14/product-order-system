@@ -20,5 +20,5 @@
     "strict": true,
     "strictPropertyInitialization": false
   },
-  "exclude": ["node_modules", "dist", "nextFrontend"]
+  "exclude": ["node_modules", "dist", "frontend"]
 }
