@@ -21,6 +21,7 @@ Swagger: `http://localhost:3000/api/v1/docs`
 |---|---|---|
 | POST / GET | `/users`, `/users/:id` | Create / list / get users |
 | POST / GET | `/products`, `/products/:id` | Create / list / get products |
+| GET | `/products?query=&page=&limit=` | Search + pagination; returns `{ items, meta }` |
 | PATCH | `/products/:id` | Update product |
 | DELETE | `/products/:id` | Soft delete (204) |
 | POST | `/orders` | Place order `{ userId, items: [{ productId, quantity }] }` |

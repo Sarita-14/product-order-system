@@ -11,8 +11,10 @@ export class UsersRepository {
     private readonly repo: Repository<User>,
   ) {}
 
-  create(data: CreateUserDto): Promise<User> {
-    return this.repo.save(this.repo.create(data));
+  async create(data: CreateUserDto & { passwordHash?: string }): Promise<User> {
+    const saved = await this.repo.save(this.repo.create(data));
+    delete saved.passwordHash; // save() echoes back what we set; never return the hash
+    return saved;
   }
 
   findAll(): Promise<User[]> {
@@ -21,5 +23,14 @@ export class UsersRepository {
 
   findById(id: string): Promise<User | null> {
     return this.repo.findOneBy({ id });
+  }
+
+  // Only for login: passwordHash is select:false, so it has to be asked for explicitly
+  findByEmailWithPassword(email: string): Promise<User | null> {
+    return this.repo
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('LOWER(user.email) = LOWER(:email)', { email })
+      .getOne();
   }
 }

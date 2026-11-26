@@ -6,7 +6,8 @@ import { ProductsRepository } from '../repositories/products.repository';
 export class GetProductsUseCase {
   constructor(private readonly productsRepository: ProductsRepository) {}
 
-  execute(): Promise<Product[]> {
-    return this.productsRepository.findAllActive();
+  execute(search?: string): Promise<Product[]> {
+    const term = search?.trim().slice(0, 100); // ignore spaces, cap the length
+    return this.productsRepository.findAllActive(term || undefined);
   }
 }

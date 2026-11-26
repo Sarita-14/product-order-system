@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, In, Repository } from 'typeorm';
+import { EntityManager, ILike, In, Repository } from 'typeorm';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { Product } from '../entities/product.entity';
@@ -16,10 +16,21 @@ export class ProductsRepository {
     return this.repo.save(this.repo.create(data));
   }
 
-  /** Active products only; soft-deleted ones are hidden. */
-  findAllActive(): Promise<Product[]> {
+  /**
+   * Active products only; soft-deleted ones are hidden.
+   * With `search`: case-insensitive match on name OR description.
+   */
+  findAllActive(search?: string): Promise<Product[]> {
+    // % and _ are wildcards in LIKE; escape them so "50%" searches for "50%"
+    const pattern = search && `%${search.replace(/[\\%_]/g, '\\$&')}%`;
     return this.repo.find({
-      where: { isActive: true },
+      where: pattern
+        ? [
+            // an array in `where` means OR
+            { isActive: true, name: ILike(pattern) },
+            { isActive: true, description: ILike(pattern) },
+          ]
+        : { isActive: true },
       order: { createdAt: 'DESC' },
     });
   }

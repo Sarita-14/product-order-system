@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
@@ -9,6 +10,7 @@ import {
   ApiOperation,
   ApiParam,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../../common/dto/error-response.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -16,6 +18,8 @@ import { User } from '../entities/user.entity';
 import { UsersService } from '../services/users.service';
 
 @ApiTags('Users')
+@ApiBearerAuth() // every route here needs a token
+@ApiUnauthorizedResponse({ description: 'Missing, invalid or expired token', type: ErrorResponseDto })
 @ApiInternalServerErrorResponse({ description: 'Unexpected server error', type: ErrorResponseDto })
 @Controller('users')
 export class UsersController {

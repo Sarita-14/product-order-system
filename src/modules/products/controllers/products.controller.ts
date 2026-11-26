@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
+  ApiBearerAuth,
   ApiCreatedResponse,
   ApiInternalServerErrorResponse,
   ApiNoContentResponse,
@@ -8,9 +9,12 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { ErrorResponseDto } from '../../../common/dto/error-response.dto';
+import { Public } from '../../auth/decorators/public.decorator';
 import { CreateProductDto } from '../dto/create-product.dto';
 import { UpdateProductDto } from '../dto/update-product.dto';
 import { Product } from '../entities/product.entity';
@@ -23,6 +27,8 @@ const PRODUCT_ID_PARAM = {
 };
 
 @ApiTags('Products')
+@ApiBearerAuth() // create/update/delete need a token; the two GETs are @Public
+@ApiUnauthorizedResponse({ description: 'Missing, invalid or expired token', type: ErrorResponseDto })
 @ApiInternalServerErrorResponse({ description: 'Unexpected server error', type: ErrorResponseDto })
 @Controller('products')
 export class ProductsController {
@@ -36,13 +42,16 @@ export class ProductsController {
     return this.productsService.create(dto);
   }
 
+  @Public()
   @Get()
-  @ApiOperation({ summary: 'List active products, newest first' })
+  @ApiOperation({ summary: 'List active products, newest first (optionally filtered by search)' })
+  @ApiQuery({ name: 'search', required: false, description: 'Case-insensitive match on name or description', example: 'pen' })
   @ApiOkResponse({ description: 'List of products; returned inside data', type: [Product] })
-  findAll() {
-    return this.productsService.findAll();
+  findAll(@Query('search') search?: string) {
+    return this.productsService.findAll(search);
   }
 
+  @Public()
   @Get(':id')
   @ApiOperation({ summary: 'Get one active product by id' })
   @ApiParam(PRODUCT_ID_PARAM)

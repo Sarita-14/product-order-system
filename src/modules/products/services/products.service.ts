@@ -21,8 +21,8 @@ export class ProductsService {
     return this.createProductUseCase.execute(dto);
   }
 
-  findAll(): Promise<Product[]> {
-    return this.getProductsUseCase.execute();
+  findAll(search?: string): Promise<Product[]> {
+    return this.getProductsUseCase.execute(search);
   }
 
   findOne(id: string): Promise<Product> {
