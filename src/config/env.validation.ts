@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
+  IsNotEmpty,
   IsOptional,
   IsString,
   validateSync,
@@ -48,6 +49,20 @@ class EnvironmentVariables {
   @IsOptional()
   @IsEmail()
   EMAIL_FROM: string = 'onboarding@resend.dev';
+
+  // ---------- Auth (JWT) ----------
+  // Secret used to sign tokens. Keep it long and random, never commit it.
+  @IsString()
+  @IsNotEmpty()
+  JWT_SECRET: string;
+
+  // How long a token stays valid, e.g. "15m", "1h", "1d"
+  @IsString()
+  JWT_EXPIRES_IN: string = '1d';
+
+  // The Next.js app allowed to call this API from the browser (CORS)
+  @IsString()
+  FRONTEND_URL: string = 'http://localhost:3001';
 }
 
 export function validate(config: Record<string, unknown>) {

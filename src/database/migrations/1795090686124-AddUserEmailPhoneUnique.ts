@@ -1,16 +1,11 @@
-import { MigrationInterface, QueryRunner } from "typeorm";
+import { MigrationInterface, QueryRunner } from 'typeorm';
 
+// Accidental duplicate of 1795090513273-AddUserEmailPhoneUnique (generated twice).
+// Kept as a no-op so TypeORM's history stays intact.
 export class AddUserEmailPhoneUnique1795090686124 implements MigrationInterface {
-    name = 'AddUserEmailPhoneUnique1795090686124'
+  name = 'AddUserEmailPhoneUnique1795090686124';
 
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3" UNIQUE ("email")`);
-        await queryRunner.query(`ALTER TABLE "users" ADD CONSTRAINT "UQ_17d1817f241f10a3dbafb169fd2" UNIQUE ("phone_number")`);
-    }
+  public async up(): Promise<void> {}
 
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "users" DROP CONSTRAINT "UQ_17d1817f241f10a3dbafb169fd2"`);
-        await queryRunner.query(`ALTER TABLE "users" DROP CONSTRAINT "UQ_97672ac88f789774dd47f7c8be3"`);
-    }
-
+  public async down(): Promise<void> {}
 }

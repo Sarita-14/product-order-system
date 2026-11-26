@@ -18,6 +18,7 @@ import { GetUsersUseCase } from './usecases/get-users.usecase';
     GetUsersUseCase,
     GetUserUseCase,
   ],
-  exports: [UsersService], // PlaceOrderUseCase uses it to find the customer
+  // UsersService: PlaceOrderUseCase finds the customer; UsersRepository: auth usecases
+  exports: [UsersService, UsersRepository],
 })
 export class UsersModule {}

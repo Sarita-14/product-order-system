@@ -1,3 +1,4 @@
+import { ApiHideProperty } from '@nestjs/swagger';
 import {
   Column,
   CreateDateColumn,
@@ -21,6 +22,19 @@ export class User {
 
   @Column({ name: 'phone_number', type: 'varchar', length: 20, unique: true })
   phoneNumber!: string;
+
+  // bcrypt hash, never the plain password.
+  // select: false -> left out of every normal query, so it never leaks in a response.
+  // nullable -> customers created through POST /users have no login.
+  @ApiHideProperty()
+  @Column({
+    name: 'password_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    select: false,
+  })
+  passwordHash?: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

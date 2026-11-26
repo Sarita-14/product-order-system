@@ -13,6 +13,9 @@ async function bootstrap() {
   const host = config.getOrThrow<string>('APP_HOST');
   const swaggerPath = config.getOrThrow<string>('SWAGGER_PATH');
 
+  // Lets the Next.js app (a different port = different origin) call the API from the browser
+  app.enableCors({ origin: config.getOrThrow<string>('FRONTEND_URL') });
+
   // every route gets the prefix, except the root health check
   app.setGlobalPrefix(prefix, {
     exclude: [{ path: '/', method: RequestMethod.GET }],
@@ -24,6 +27,7 @@ async function bootstrap() {
       'Products, orders with atomic stock deduction, and Resend order emails',
     )
     .setVersion('1.0')
+    .addBearerAuth() // adds the "Authorize" button: paste the accessToken from /auth/login
     .build();
   SwaggerModule.setup(swaggerPath, app, () =>
     SwaggerModule.createDocument(app, swaggerConfig),
