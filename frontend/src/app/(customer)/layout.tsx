@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// FILE: app/(customer)/layout.tsx — wraps /dashboard, /checkout and /orders/<id>.
+// FILE: app/(customer)/layout.tsx — wraps /dashboard, /cart, /checkout and /orders/<id>.
+// Logged-in only. The shopping pages (dashboard, cart, checkout) also call requireCustomer();
+// /orders/<id> stays open to admins too, who open orders from their admin table.
 // (Route group "(customer)" is not in the URL: see app/(public)/page.tsx.)
 // ─────────────────────────────────────────────────────────────────────────────
 

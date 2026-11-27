@@ -8,6 +8,10 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 // The orders table.
 import { OrdersTable } from '@/components/orders/orders-table';
+// The "Cancel order" button for unpaid orders (gives the stock back).
+import { CancelOrderButton } from '@/components/orders/cancel-order-button';
+// "Write a review" links for delivered orders.
+import { ReviewLinks } from '@/components/reviews/review-links';
 // "Loading…" text.
 import { Loading } from '@/components/ui/loading';
 // The page's <h1>.
@@ -15,7 +19,7 @@ import { PageHeading } from '@/components/ui/page-heading';
 // Styles.
 import { linkClass, mutedClass } from '@/components/ui/styles';
 // Who is logged in.
-import { requireUser } from '@/lib/auth';
+import { requireCustomer } from '@/lib/auth';
 // SEO helper.
 import { buildMetadata } from '@/lib/seo';
 // GET /orders/my.
@@ -46,12 +50,13 @@ export default function DashboardPage() {
 
 // Container: "Hi, <username>".
 async function Greeting() {
-  const user = await requireUser(); // already fetched by the layout -> cached, no extra call
+  const user = await requireCustomer(); // admins are sent to /admin (cached: no extra API call)
   return <PageHeading title={`Hi, ${user.username}`} subtitle="Here are your orders, newest first." />;
 }
 
 // Container: loads my orders and shows them.
 async function MyOrders() {
+  await requireCustomer(); // same check (this part may finish before Greeting)
   const orders = await getMyOrders();
   // No orders yet -> a message with a link to the shop.
   if (orders.length === 0) {
@@ -64,5 +69,18 @@ async function MyOrders() {
       </p>
     );
   }
-  return <OrdersTable orders={orders} />;
+  // Each row's action: Cancel while unpaid (PENDING/FAILED), "Write a review" once DELIVERED.
+  // Each component shows nothing when it doesn't apply, so at most one of them appears.
+  // <>...</> = a "fragment": groups two things without adding an extra box around them.
+  return (
+    <OrdersTable
+      orders={orders}
+      renderAction={(order) => (
+        <>
+          <CancelOrderButton order={order} />
+          <ReviewLinks order={order} />
+        </>
+      )}
+    />
+  );
 }

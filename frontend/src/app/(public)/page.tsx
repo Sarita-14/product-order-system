@@ -24,6 +24,8 @@ import { PageHeading } from '@/components/ui/page-heading';
 import { mutedClass } from '@/components/ui/styles';
 // SEO helper.
 import { buildMetadata } from '@/lib/seo';
+// Our API error type (to tell real backend failures apart from Next.js internals).
+import { ApiError } from '@/lib/axios';
 // GET /products.
 import { getProducts } from '@/services/product.service';
 
@@ -53,6 +55,8 @@ export default function HomePage() {
 async function ProductList() {
   // Ask the backend. If it fails, log the reason and use null instead of crashing.
   const products = await getProducts().catch((error: unknown) => {
+    // Only handle real API errors; anything else (e.g. Next.js' pre-render signal) must reach Next.
+    if (!(error instanceof ApiError)) throw error;
     console.error('Failed to load products:', error); // the real reason, in the server terminal
     return null;
   });

@@ -30,6 +30,8 @@ export type ButtonVariant = keyof typeof buttonClass;
 
 // A white box with border, rounded corners and a soft shadow.
 export const cardClass = 'rounded-2xl border border-slate-200 bg-white p-6 shadow-sm';
+// The header's menu links (grey, blue on hover).
+export const navLinkClass = 'font-medium text-slate-700 hover:text-brand-700';
 // A blue text link, underlined on hover.
 export const linkClass = 'font-medium text-brand-600 hover:underline';
 // Grey "less important" text.

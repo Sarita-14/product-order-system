@@ -5,11 +5,10 @@
 // Our HTTP helper.
 import { http } from '@/lib/axios';
 // The shapes we receive / send.
-import type { Order, OrderItemInput, OrderStatus } from '@/types/order';
+import type { Order, OrderStatus } from '@/types/order';
 
-// Customer (the backend takes the customer from the token, never from the body)
-// POST /orders { items } -> the new order (status PENDING)
-export const placeOrder = (items: OrderItemInput[]) => http.post<Order>('/orders', { items });
+// Customer (the backend takes the customer from the token, never from the body).
+// Orders are placed from the cart: see services/cart.service.ts.
 // GET /orders/my -> my orders, newest first
 export const getMyOrders = () => http.get<Order[]>('/orders/my');
 // GET /orders/<id> -> one order

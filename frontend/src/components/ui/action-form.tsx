@@ -33,6 +33,7 @@ interface ActionFormProps {
   variant?: ButtonVariant; // button look
   className?: string; // layout of the form
   children?: ReactNode; // the fields (built on the server and passed in)
+  onSuccess?: ReactNode; // extra content shown only after a success (e.g. a "View cart" link)
 }
 
 export function ActionForm({
@@ -42,6 +43,7 @@ export function ActionForm({
   variant = 'primary', // default when not given
   className = 'flex flex-col gap-4', // default: fields stacked
   children,
+  onSuccess,
 }: ActionFormProps) {
   // Connect the form to the Server Action. "undefined" = no answer yet.
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -51,6 +53,10 @@ export function ActionForm({
     <form action={formAction} className={className}>
       {/* The action answered with an error -> show it in red */}
       {state?.error && <Alert>{state.error}</Alert>}
+      {/* The action answered with a success message -> show it in green */}
+      {state?.success && <Alert tone="success">{state.success}</Alert>}
+      {/* After a success, show the extra content the page gave (if any) */}
+      {state?.success && onSuccess}
       {/* The fields given by the page */}
       {children}
       {/* Disabled while working, so it can't be clicked twice */}

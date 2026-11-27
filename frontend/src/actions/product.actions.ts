@@ -2,19 +2,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // FILE: actions/product.actions.ts — admin: create, update, delete products.
 // (Server Action concept: see lib/form.ts. revalidatePath: see order.actions.ts.)
-// ─────────────────────────────────────────────────────────────────────────────
 
 // Mark pages as needing fresh data.
 import { revalidatePath } from 'next/cache';
-// Send the browser to another page.
 import { redirect } from 'next/navigation';
-// Shared action helpers.
 import { attempt, text, type FormState } from '@/lib/form';
-// URL helpers.
 import { ADMIN_PATHS, productPath } from '@/lib/routes';
-// The backend calls, renamed with "as" to avoid clashing with this file's names.
 import { createProduct as createApi, deleteProduct as deleteApi, updateProduct as updateApi } from '@/services/product.service';
-// The shape the backend expects.
 import type { ProductInput } from '@/types/product';
 
 // The product form (components/admin/product-fields.tsx) -> API body
@@ -31,7 +25,9 @@ const readProduct = (formData: FormData): ProductInput => ({
 function refreshProductPages(id?: string) {
   revalidatePath('/'); // home page product grid
   revalidatePath(ADMIN_PATHS.products); // admin product table
-  if (id) revalidatePath(productPath(id)); // that product's own page
+  if (id) {
+    revalidatePath(productPath(id)); // that product's own page
+  }
 }
 
 // Called by the "Add product" form.

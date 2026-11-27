@@ -24,7 +24,7 @@ import { OrderStatusBadge } from './order-status-badge';
 interface OrdersTableProps {
   orders: Order[];
   showCustomer?: boolean; // admin: who placed it
-  renderAction?: (order: Order) => ReactNode; // admin: the status form for each row
+  renderAction?: (order: Order) => ReactNode; // admin: the status form; customer: the Cancel button
 }
 
 export function OrdersTable({ orders, showCustomer = false, renderAction }: OrdersTableProps) {
@@ -66,7 +66,7 @@ export function OrdersTable({ orders, showCustomer = false, renderAction }: Orde
               <td className={tdClass}>
                 <OrderStatusBadge status={order.status} />
               </td>
-              {/* The page decides what goes here (admin: the status form) */}
+              {/* The page decides what goes here (admin: the status form; customer: Cancel) */}
               {renderAction && <td className={tdClass}>{renderAction(order)}</td>}
             </tr>
           ))}

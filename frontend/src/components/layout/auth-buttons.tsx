@@ -1,7 +1,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // FILE: components/layout/auth-buttons.tsx — right side of the header.
-// Visitors see Login/Register;
-// logged-in users see Dashboard (+ Admin for admins), their name and a Sign out button.
+// Visitors:  Login / Register.
+// Customers: Cart (n), My orders, their name, Sign out.
+// Admins:    Admin dashboard, their name with an "Admin" badge, Sign out (no cart: admins don't shop).
 // DATA COMES FROM: getCurrentUser() (cookie + GET /auth/me) — a "container" component.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -9,15 +10,14 @@
 import Link from 'next/link';
 // The Server Action that deletes the cookie.
 import { logout } from '@/actions/auth.actions';
-// Button looks.
-import { buttonClass } from '@/components/ui/styles';
+// Button looks + the header's link style.
+import { buttonClass, navLinkClass } from '@/components/ui/styles';
 // Who is logged in (or null).
 import { getCurrentUser } from '@/lib/auth';
 // Admin URLs.
 import { ADMIN_PATHS } from '@/lib/routes';
-
-// The style of the text links in this menu (written once, used twice).
-const navLink = 'font-medium text-slate-700 hover:text-brand-700';
+// "Cart (3)".
+import { CartLink } from './cart-link';
 
 // "async" = it waits for data (a Server Component).
 export async function AuthButtons() {
@@ -42,14 +42,18 @@ export async function AuthButtons() {
   return (
     <div className="flex items-center gap-3">
       <nav className="flex items-center gap-3">
-        <Link href="/dashboard" className={navLink}>
-          Dashboard
-        </Link>
         {/* The role comes from the server-side /auth/me call; the browser never stores it */}
-        {user.role === 'admin' && (
-          <Link href={ADMIN_PATHS.dashboard} className={navLink}>
-            Admin
+        {user.role === 'admin' ? (
+          <Link href={ADMIN_PATHS.dashboard} className={navLinkClass}>
+            Admin dashboard
           </Link>
+        ) : (
+          <>
+            <CartLink className={navLinkClass} />
+            <Link href="/dashboard" className={navLinkClass}>
+              My orders
+            </Link>
+          </>
         )}
       </nav>
       <span className="flex items-center gap-2 font-medium text-slate-700">
@@ -58,6 +62,10 @@ export async function AuthButtons() {
           {user.username.charAt(0)}
         </span>
         <span className="hidden sm:inline">{user.username}</span>
+        {/* A small badge so it's always clear this is an admin account */}
+        {user.role === 'admin' && (
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">Admin</span>
+        )}
       </span>
       {/* a form + Server Action: sign out runs on the server and deletes the cookie */}
       <form action={logout}>

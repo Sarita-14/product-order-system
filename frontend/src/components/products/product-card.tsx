@@ -1,12 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // FILE: components/products/product-card.tsx
 // One product box on the home page. It only DISPLAYS what it is given; it never fetches data.
-// The name links to the product page.
+// The name links to the product page; below it the buy area (depends on who is looking).
 // DATA COMES FROM: the `product` prop (the home page fetched the list).
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Link to another page of our site.
 import Link from 'next/link';
+// Login link / Add to cart / Edit product, depending on the role.
+import { PurchaseActions } from '@/components/cart/purchase-actions';
 // 499 -> "₹499.00"
 import { formatRupees } from '@/lib/format';
 // Builds "/products/<id>".
@@ -37,6 +39,7 @@ export function ProductCard({ product }: { product: Product }) {
       </p>
 
       <StockBadge stock={product.stockQuantity} />
+      <PurchaseActions product={product} />
     </article>
   );
 }

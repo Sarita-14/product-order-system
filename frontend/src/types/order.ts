@@ -1,16 +1,9 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// FILE: types/order.ts — what an order looks like, plus the status rules.
-// DATA COMES FROM: GET /orders, /orders/my, /orders/:id (backend).
-// ─────────────────────────────────────────────────────────────────────────────
-
-// We only need the Product shape (type), so "import type".
 import type { Product } from './product';
 
 // Same values as the backend OrderStatus enum.
 // The "|" means "or": a status is exactly one of these texts.
 export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'FAILED';
 
-// The same statuses as a LIST, so we can loop over them (admin dashboard counts).
 export const ORDER_STATUSES: OrderStatus[] = [
   'PENDING',
   'CONFIRMED',
@@ -20,17 +13,12 @@ export const ORDER_STATUSES: OrderStatus[] = [
   'FAILED',
 ];
 
-// The same rules the backend enforces; here only to decide which buttons to SHOW.
-// (The backend still checks them, so a tampered form gets a 400.)
-// Statuses that still allow "Cancel" (and the Pay placeholder).
 export const CANCELLABLE_STATUSES: OrderStatus[] = ['PENDING', 'FAILED'];
-// Lookup table: current status -> the next status an admin may set.
+export const PAYABLE_STATUSES: OrderStatus[] = ['PENDING', 'FAILED'];
 export const NEXT_ADMIN_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   CONFIRMED: 'SHIPPED',
   SHIPPED: 'DELIVERED',
 };
-
-// One line of an order. unitPrice is the price at order time (a copy saved at that moment).
 export interface OrderItem {
   id: string; // the line's own id
   productId: string; // which product
@@ -52,6 +40,3 @@ export interface Order {
   updatedAt: string; // last change (text)
   items: OrderItem[]; // the lines
 }
-
-// What the checkout form sends: one entry per product with quantity > 0
-export type OrderItemInput = Pick<OrderItem, 'productId' | 'quantity'>;

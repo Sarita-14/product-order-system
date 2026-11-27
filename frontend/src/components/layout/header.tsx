@@ -9,6 +9,8 @@ import Link from 'next/link';
 import { Suspense } from 'react';
 // The right side: Login/Register, or the user's menu.
 import { AuthButtons } from './auth-buttons';
+// The header's link style.
+import { navLinkClass } from '@/components/ui/styles';
 
 export function Header() {
   return (
@@ -25,10 +27,17 @@ export function Header() {
           <span className="hidden sm:inline">Product Order System</span>
         </Link>
 
-        {/* AuthButtons reads the login cookie (request data) -> must be inside <Suspense> */}
-        <Suspense fallback={null}>
-          <AuthButtons />
-        </Suspense>
+        <div className="flex items-center gap-4">
+          {/* For everyone: the product list */}
+          <Link href="/" className={navLinkClass}>
+            Products
+          </Link>
+          {/* The rest depends on who is logged in (Cart only for customers, Admin only for admins).
+              AuthButtons reads the login cookie (request data) -> must be inside <Suspense> */}
+          <Suspense fallback={null}>
+            <AuthButtons />
+          </Suspense>
+        </div>
       </div>
     </header>
   );

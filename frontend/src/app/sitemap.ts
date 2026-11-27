@@ -21,11 +21,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // The home page: changes daily, most important (priority 1).
     { url: SITE_URL, changeFrequency: 'daily', priority: 1 },
     // "...products.map(...)" = add one entry per product into this same list.
-    ...products.map((product) => ({
-      url: new URL(productPath(product.id), SITE_URL).toString(), // full URL
-      lastModified: product.updatedAt, // when it last changed
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    })),
+    ...products.map((product) => (
+      {
+        url: new URL(productPath(product.id), SITE_URL).toString(), // full URL
+        lastModified: product.updatedAt, // when it last changed
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      }
+    )),
   ];
 }

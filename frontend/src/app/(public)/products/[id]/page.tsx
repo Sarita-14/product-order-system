@@ -16,6 +16,8 @@ import Link from 'next/link';
 import { cache, Suspense } from 'react';
 // The product's body (price, stock, Order now).
 import { ProductDetails } from '@/components/products/product-details';
+// The "Customer reviews" section (cached list = ISR, + the review form).
+import { ProductReviews } from '@/components/reviews/product-reviews';
 // Writes structured data for Google.
 import { JsonLd } from '@/components/seo/json-ld';
 // "Loading…" text.
@@ -77,6 +79,10 @@ async function Product({ params }: { params: Params }) {
       </nav>
       <PageHeading title={product.name} />
       <ProductDetails product={product} />
+      {/* Reviews in their own Suspense: the product shows first, the reviews stream in right after */}
+      <Suspense fallback={<Loading />}>
+        <ProductReviews productId={id} />
+      </Suspense>
       {/* Structured data: product + price + stock, and the breadcrumb */}
       <JsonLd data={productJsonLd(product, path)} />
       <JsonLd

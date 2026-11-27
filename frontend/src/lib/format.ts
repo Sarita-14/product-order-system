@@ -9,7 +9,8 @@
 // A money formatter in Indian rupees (₹ sign, Indian comma style).
 const rupees = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' });
 // A date formatter: medium date + short time, e.g. "26 Nov 2026, 1:00 pm".
-const dates = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+// timeZone: always Indian time, whatever timezone the server runs in (servers often use UTC).
+const dates = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
 
 // 1499 -> "₹1,499.00"
 export const formatRupees = (amount: number) => rupees.format(amount);

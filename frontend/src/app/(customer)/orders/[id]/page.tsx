@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // FILE: app/(customer)/orders/[id]/page.tsx — "/orders/<id>": one order's details.
-// Shows items, totals, status; and for unpaid orders the (disabled) Pay button + Cancel.
+// Shows items, totals, status; and, for the owner of an unpaid order, Pay (Razorpay) + Cancel.
 // ([id] dynamic route and generateMetadata: see app/(public)/products/[id]/page.tsx.)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -8,18 +8,22 @@
 import type { Metadata } from 'next';
 // Suspense = wait for data.
 import { Suspense } from 'react';
-// The Server Action that cancels.
-import { cancelOrder } from '@/actions/order.actions';
 // The order body (status + items table).
 import { OrderDetails } from '@/components/orders/order-details';
-// The disabled Pay placeholder.
+// The "Cancel order" button (gives the stock back).
+import { CancelOrderButton } from '@/components/orders/cancel-order-button';
+// The Razorpay Pay button.
 import { PayButton } from '@/components/orders/pay-button';
-// The shared form (used here for the Cancel button).
-import { ActionForm } from '@/components/ui/action-form';
+// "Write a review" links for a delivered order.
+import { ReviewLinks } from '@/components/reviews/review-links';
+// The red message box (for a failed payment).
+import { Alert } from '@/components/ui/alert';
 // "Loading…" text.
 import { Loading } from '@/components/ui/loading';
 // The page's <h1>.
 import { PageHeading } from '@/components/ui/page-heading';
+// Who is logged in (or a redirect to /login).
+import { requireUser } from '@/lib/auth';
 // "#72A7290D".
 import { formatOrderNumber } from '@/lib/format';
 // API "not found" -> 404 page.
@@ -30,8 +34,8 @@ import { orderPath } from '@/lib/routes';
 import { buildMetadata } from '@/lib/seo';
 // GET /orders/<id>.
 import { getOrderById } from '@/services/order.service';
-// Which statuses can still be cancelled.
-import { CANCELLABLE_STATUSES } from '@/types/order';
+// Which statuses can still be cancelled / paid.
+import { CANCELLABLE_STATUSES, PAYABLE_STATUSES } from '@/types/order';
 
 // The [id] from the URL (it arrives a moment later, so we wait for it with await).
 type Params = Promise<{ id: string }>;
@@ -58,27 +62,34 @@ export default function OrderPage({ params }: { params: Params }) {
 // Container: loads the order and shows it.
 async function Order({ params }: { params: Params }) {
   const { id } = await params;
-  const order = await findOrNotFound(getOrderById(id)); // someone else's order -> 404 too
+  // Both at the same time (Promise.all): the order, and who is looking at it.
+  const [order, user] = await Promise.all([
+    findOrNotFound(getOrderById(id)), // someone else's order -> 404 too (admins may see any)
+    requireUser(), // already loaded by the layout; cache() makes this free
+  ]);
+  // Only the OWNER may pay or cancel (an admin looking at a customer's order gets no buttons).
+  const isOwner = order.userId === user.id;
   // .includes = is the status in the list?
-  const unpaid = CANCELLABLE_STATUSES.includes(order.status); // PENDING or FAILED
+  const canPay = isOwner && PAYABLE_STATUSES.includes(order.status); // PENDING or FAILED
+  const canCancel = isOwner && CANCELLABLE_STATUSES.includes(order.status);
 
   return (
     <section className="flex flex-col gap-6">
       <PageHeading title={`Order ${formatOrderNumber(order.id)}`} />
       <OrderDetails order={order} />
-      {/* Only unpaid orders get the Pay placeholder and the Cancel button */}
-      {unpaid && (
+      {/* The last payment attempt failed -> say so (Pay below lets them try again) */}
+      {isOwner && order.status === 'FAILED' && (
+        <Alert tone="warning">Your last payment did not go through. You can try again or cancel the order.</Alert>
+      )}
+      {/* Unpaid orders of the owner get Pay and Cancel */}
+      {(canPay || canCancel) && (
         <div className="flex flex-wrap items-start gap-3">
-          <PayButton amount={order.totalAmount} />
-          {/* .bind(null, order.id) = the action already knows WHICH order to cancel */}
-          <ActionForm
-            action={cancelOrder.bind(null, order.id)}
-            submitLabel="Cancel order"
-            pendingLabel="Cancelling…"
-            variant="secondary"
-          />
+          {canPay && <PayButton orderId={order.id} amount={order.totalAmount} />}
+          {canCancel && <CancelOrderButton order={order} />}
         </div>
       )}
+      {/* Delivered -> the owner may review what they received (admins viewing it get nothing) */}
+      {isOwner && <ReviewLinks order={order} />}
     </section>
   );
 }
