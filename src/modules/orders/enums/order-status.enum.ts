@@ -22,6 +22,9 @@ export enum OrderStatus {
 /** A customer may cancel only while nothing has been paid/shipped. */
 export const CANCELLABLE_STATUSES = [OrderStatus.PENDING, OrderStatus.FAILED];
 
+/** A customer may pay only an unpaid order: PENDING, or FAILED (= try again). */
+export const PAYABLE_STATUSES = [OrderStatus.PENDING, OrderStatus.FAILED];
+
 /** The only moves an admin may make: current status -> the one allowed next status. */
 // Partial<Record<A, B>> = "an object whose keys are some of A, and values are B".
 // Read it as a lookup table: NEXT_ADMIN_STATUS[CONFIRMED] is SHIPPED.

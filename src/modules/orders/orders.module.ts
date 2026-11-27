@@ -42,6 +42,9 @@ import { UpdateOrderStatusUseCase } from './usecases/update-order-status.usecase
     CancelOrderUseCase,
     UpdateOrderStatusUseCase,
   ],
+  // Shared with other modules: PaymentsModule loads orders (404 check) and changes their status;
+  // CartModule turns a cart into an order with PlaceOrderUseCase.createOrder.
+  exports: [OrdersRepository, GetOrderUseCase, PlaceOrderUseCase],
 })
 // Empty class; the settings above do the work.
 export class OrdersModule {}

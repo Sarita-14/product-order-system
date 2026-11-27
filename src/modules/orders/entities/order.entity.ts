@@ -59,6 +59,16 @@ export class Order {
   })
   status: OrderStatus;
 
+  // Razorpay's id for the payment attempt ("order_Abc123"), saved when the customer clicks Pay.
+  // null = Pay was never clicked. (Column added by the AddOrderPayment migration.)
+  @Column({ name: 'razorpay_order_id', type: 'varchar', length: 255, nullable: true })
+  razorpayOrderId: string | null;
+
+  // Razorpay's id of the successful payment ("pay_Xyz789"), saved once the payment is verified.
+  // null = not paid (yet).
+  @Column({ name: 'razorpay_payment_id', type: 'varchar', length: 255, nullable: true })
+  razorpayPaymentId: string | null;
+
   // Filled in by the database when the row is created.
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;

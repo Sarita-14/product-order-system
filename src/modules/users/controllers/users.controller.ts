@@ -11,7 +11,7 @@
 
 // Nest decorators: @Controller (a class of routes), @Get/@Post (route methods),
 // @Body (the JSON sent), @Param (a piece of the URL), ParseUUIDPipe (checks the id has the right format).
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
 // Swagger decorators: they only DESCRIBE the routes on the docs page (/api/v1/docs).
 import {
   ApiBadRequestResponse,
@@ -30,6 +30,12 @@ import {
 import { ErrorResponseDto } from '../../../common/dto/error-response.dto';
 // Our decorator: "only admins may call this" (see roles.decorator.ts).
 import { AdminOnly } from '../../auth/decorators/roles.decorator';
+// @CurrentUser(): the logged-in admin (to stop them changing their own role).
+import { CurrentUser } from '../../auth/decorators/current-user.decorator';
+// The shape of the token content (type only).
+import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
+// Body of PATCH /users/:id/role.
+import { UpdateUserRoleDto } from '../dto/update-user-role.dto';
 // The rules for the JSON body when creating a user.
 import { CreateUserDto } from '../dto/create-user.dto';
 // The User entity (used as the response type in the docs).
@@ -79,5 +85,16 @@ export class UsersController {
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     // Ask the service for that one user (it answers 404 if not found).
     return this.usersService.findOne(id);
+  }
+
+  @Patch(':id/role') // PATCH /users/<id>/role   (admins only, like every route here)
+  @ApiOperation({ summary: 'Make a user an admin, or a customer again (not yourself)' })
+  @ApiParam({ name: 'id', description: 'User id (UUID)', example: '4f1c2b8d-cd19-4300-9cf9-23e15b745aaa' })
+  @ApiOkResponse({ description: 'The user with the new role; returned inside data', type: User })
+  @ApiBadRequestResponse({ description: 'Invalid UUID/role, or it is your own account', type: ErrorResponseDto })
+  @ApiNotFoundResponse({ description: 'No user with this id', type: ErrorResponseDto })
+  // admin = who is doing it (from the token); id = whose role; dto.role = the new role.
+  changeRole(@CurrentUser() admin: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUserRoleDto) {
+    return this.usersService.changeRole(admin.sub, id, dto.role);
   }
 }

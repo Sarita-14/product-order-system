@@ -4,6 +4,7 @@ import { UsersController } from './controllers/users.controller';
 import { User } from './entities/user.entity';
 import { UsersRepository } from './repositories/users.repository';
 import { UsersService } from './services/users.service';
+import { ChangeUserRoleUseCase } from './usecases/change-user-role.usecase';
 import { CreateUserUseCase } from './usecases/create-user.usecase';
 import { GetUserUseCase } from './usecases/get-user.usecase';
 import { GetUsersUseCase } from './usecases/get-users.usecase';
@@ -17,6 +18,7 @@ import { GetUsersUseCase } from './usecases/get-users.usecase';
     CreateUserUseCase,
     GetUsersUseCase,
     GetUserUseCase,
+    ChangeUserRoleUseCase, // admin: make admin / make customer
   ],
   // UsersService: PlaceOrderUseCase finds the customer; UsersRepository: auth usecases
   exports: [UsersService, UsersRepository],

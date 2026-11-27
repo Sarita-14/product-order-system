@@ -1,3 +1,5 @@
+// FIRST: run in UTC, so dates from the database are read correctly (see the file).
+import './config/timezone';
 import { Logger, RequestMethod } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -5,7 +7,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  // rawBody: true = also keep the request body's exact original bytes (req.rawBody).
+  // The Razorpay webhook needs them: its signature is computed over those exact bytes.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const config = app.get(ConfigService);
 
   const port = config.getOrThrow<number>('PORT');

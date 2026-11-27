@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { User } from '../entities/user.entity';
+// The list of roles.
+import { Role } from '../enums/role.enum';
 
 @Injectable()
 export class UsersRepository {
@@ -23,6 +25,11 @@ export class UsersRepository {
 
   findById(id: string): Promise<User | null> {
     return this.repo.findOneBy({ id });
+  }
+
+  // Change only the role column: UPDATE users SET role = ... WHERE id = ...
+  async updateRole(id: string, role: Role): Promise<void> {
+    await this.repo.update(id, { role });
   }
 
   // Only for login: passwordHash is select:false, so it has to be asked for explicitly

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// FILE: roles.decorator.ts — @Roles(...) and @AdminOnly().
+// FILE: roles.decorator.ts — @Roles(...), @AdminOnly() and @CustomerOnly().
 //
 // @Roles(Role.Admin) on a route (or a whole controller) = only these roles may call it.
 // RolesGuard reads this list. No @Roles = any logged-in user is fine.
@@ -27,4 +27,12 @@ export const AdminOnly = () =>
   applyDecorators(
     Roles(Role.Admin), // the rule: admins only
     ApiForbiddenResponse({ description: 'Admins only', type: ErrorResponseDto }), // the docs
+  );
+
+// The opposite shortcut: shopping actions (place an order, use the cart) are for customers.
+// Admins manage the shop; they don't buy from it, so an admin token gets a 403 here.
+export const CustomerOnly = () =>
+  applyDecorators(
+    Roles(Role.Customer), // the rule: customers only
+    ApiForbiddenResponse({ description: 'Customers only', type: ErrorResponseDto }), // the docs
   );

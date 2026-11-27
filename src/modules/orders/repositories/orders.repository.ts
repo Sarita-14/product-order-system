@@ -66,12 +66,51 @@ export class OrdersRepository {
     to: OrderStatus, // the new status
     manager: EntityManager = this.repo.manager, // "= ..." = default when not given: no transaction
   ): Promise<boolean> {
-    // In the database: change this order's status to `to`, BUT only if its status is still one of `from`.
-    const result = await manager.update(
-      Order,
-      { id, status: In(from) },
-      { status: to },
-    );
+    // Only the status changes.
+    return this.updateIfStatus(id, from, { status: to }, manager);
+  }
+
+  // The order paid through this Razorpay order (webhooks only know Razorpay's id), or null.
+  findByRazorpayOrderId(razorpayOrderId: string): Promise<Order | null> {
+    return this.repo.findOneBy({ razorpayOrderId });
+  }
+
+  // A verified payment: CONFIRMED + remember Razorpay's payment id, in ONE update.
+  // Same "only if still in `from`" safety as changeStatus (false = it wasn't).
+  confirmPayment(id: string, from: OrderStatus[], razorpayPaymentId: string): Promise<boolean> {
+    return this.updateIfStatus(id, from, { status: OrderStatus.CONFIRMED, razorpayPaymentId });
+  }
+
+  // Did this customer RECEIVE this product? = do they have a DELIVERED order containing it?
+  // Used by reviews: only real buyers may review a product.
+  hasDeliveredProduct(userId: string, productId: string): Promise<boolean> {
+    // exists = "is there at least one matching order?" (stops at the first match).
+    return this.repo.exists({
+      where: {
+        userId, // the customer's order
+        status: OrderStatus.DELIVERED, // ...that has arrived
+        items: { productId }, // ...and has a line for this product (TypeORM joins order_items for us)
+      },
+    });
+  }
+
+  // Remember which Razorpay order belongs to this order (saved when Pay is clicked).
+  async setRazorpayOrderId(id: string, razorpayOrderId: string): Promise<void> {
+    // In the database: UPDATE orders SET razorpay_order_id = ... WHERE id = ...
+    await this.repo.update(id, { razorpayOrderId });
+  }
+
+  // The shared core of changeStatus and confirmPayment (written once):
+  // apply `changes` ONLY IF the order's status is still one of `from`.
+  // "private" = only this class may call it.
+  private async updateIfStatus(
+    id: string, // which order
+    from: OrderStatus[], // the statuses it must currently have
+    changes: Partial<Order>, // the fields to set (Partial = some of Order's fields)
+    manager: EntityManager = this.repo.manager, // default: no transaction
+  ): Promise<boolean> {
+    // In the database: update this order, BUT only if its status is still one of `from`.
+    const result = await manager.update(Order, { id, status: In(from) }, changes);
     // affected = how many rows changed: 1 = it worked, 0 = the status didn't match.
     return result.affected === 1;
   }

@@ -2,6 +2,8 @@
 // FILE: place-order.usecase.ts — places a new order.
 // Steps: find the customer -> (transaction: lock products, check stock,
 // deduct stock, save order) -> send the email.
+// createOrder() is also used by the cart checkout (cart/usecases/checkout-cart.usecase.ts),
+// where the stock was ALREADY taken when the items went into the cart.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // BadRequestException = a 400 error; Injectable = Nest may create this class for us; NotFoundException = a 404 error.
@@ -48,7 +50,7 @@ export class PlaceOrderUseCase {
 
     // Do the real work inside ONE transaction (all saved together, or nothing).
     const order = await this.ordersRepository.transaction((manager) =>
-      this.placeOrder(manager, user, dto),
+      this.createOrder(manager, user, dto.items),
     );
 
     // "void" = send the email in the background; don't make the customer wait for it.
@@ -57,36 +59,41 @@ export class PlaceOrderUseCase {
     return order;
   }
 
-  // The steps that must run inside the transaction.
-  private async placeOrder(
+  // The steps that must run inside a transaction (the caller's `manager`).
+  // stockReserved = true when the stock was already taken (cart checkout): then we don't
+  // check or deduct it again; we only copy the current prices and save the order.
+  async createOrder(
     manager: EntityManager,
     user: User,
-    dto: CreateOrderDto,
+    lines: { productId: string; quantity: number }[],
+    stockReserved = false,
   ): Promise<Order> {
     // Load + lock every product in the order (others wait until we finish).
     const locked = await this.productsRepository.findActiveByIdsForUpdate(
       manager,
-      dto.items.map((item) => item.productId), // just the ids
+      lines.map((item) => item.productId), // just the ids
     );
     // A Map = a quick lookup "id -> product".
     const products = new Map(locked.map((p) => [p.id, p]));
 
     // Check every item, then deduct stock in memory (nothing is written yet)
-    const items = dto.items.map(({ productId, quantity }) => {
+    const items = lines.map(({ productId, quantity }) => {
       // Find the product for this line.
       const product = products.get(productId);
       // Not found (or deleted) -> 404; stopping with an error undoes the whole transaction.
       if (!product)
         throw new NotFoundException(`Product ${productId} not found`);
-      // Not enough stock -> 400.
-      if (product.stockQuantity < quantity) {
-        throw new BadRequestException(
-          `Insufficient stock for "${product.name}": requested ${quantity}, available ${product.stockQuantity}`,
-        );
+      // Stock not reserved yet (a direct order) -> check it and take it now.
+      if (!stockReserved) {
+        // Not enough stock -> 400.
+        if (product.stockQuantity < quantity) {
+          throw new BadRequestException(
+            `Insufficient stock for "${product.name}": requested ${quantity}, available ${product.stockQuantity}`,
+          );
+        }
+        // Take the quantity out of the stock (in memory for now).
+        product.stockQuantity -= quantity;
       }
-
-      // Take the quantity out of the stock (in memory for now).
-      product.stockQuantity -= quantity;
       // The order line to save.
       return {
         product,
@@ -97,7 +104,7 @@ export class PlaceOrderUseCase {
       };
     });
 
-    await this.productsRepository.saveAll(manager, locked); // stock deduction
+    if (!stockReserved) await this.productsRepository.saveAll(manager, locked); // stock deduction
 
     // Save the order with its lines and return it.
     return this.ordersRepository.create(manager, {

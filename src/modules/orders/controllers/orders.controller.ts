@@ -2,7 +2,7 @@
 // FILE: orders.controller.ts — the HTTP routes under /api/v1/orders.
 // (What a controller is: see users.controller.ts.)
 //
-//   POST  /orders              place an order (any logged-in user)
+//   POST  /orders              place an order (customers only)
 //   GET   /orders              all orders (admin)
 //   GET   /orders/my           my orders
 //   GET   /orders/:id          one order (mine, or any for admin)
@@ -29,8 +29,8 @@ import {
 import { ErrorResponseDto } from '../../../common/dto/error-response.dto';
 // @CurrentUser(): the logged-in user from the token.
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
-// @AdminOnly(): admins only.
-import { AdminOnly } from '../../auth/decorators/roles.decorator';
+// @AdminOnly(): admins only. @CustomerOnly(): customers only.
+import { AdminOnly, CustomerOnly } from '../../auth/decorators/roles.decorator';
 // The shape of the token content (type only).
 import type { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 // Body rules.
@@ -58,6 +58,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post() // POST /orders
+  @CustomerOnly() // admins manage orders; they don't place them
   @ApiOperation({ summary: 'Place an order for the logged-in user: checks stock, deducts it and emails them' })
   @ApiCreatedResponse({ description: 'Order placed with status PENDING; returned inside data', type: Order })
   @ApiBadRequestResponse({

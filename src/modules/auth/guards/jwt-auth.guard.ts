@@ -8,7 +8,11 @@
 // 1. @Public() route?            -> let it through
 // 2. no "Authorization: Bearer <token>" header -> 401
 // 3. token bad / expired         -> 401
-// 4. token ok                    -> put the token's content on req.user and continue
+// 4. token ok                    -> look the user up in the database (deleted -> 401) and put
+//                                   them on req.user WITH THEIR CURRENT ROLE, then continue.
+//    Why the database and not just the token? The token is made at login and lasts a day.
+//    If an admin makes someone a customer (or an admin), the token still holds the OLD role.
+//    Reading the role fresh on every request makes that change work immediately.
 // ─────────────────────────────────────────────────────────────────────────────
 
 // CanActivate = the shape of a guard. ExecutionContext = info about this call.
@@ -29,6 +33,8 @@ import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 import { AuthenticatedRequest } from '../interfaces/authenticated-request.interface';
 // The shape of the token content.
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+// Database access for users (the current role).
+import { UsersRepository } from '../../users/repositories/users.repository';
 
 // @Injectable() = Nest can create this guard and give it what the constructor asks for.
 @Injectable()
@@ -37,6 +43,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
+    private readonly usersRepository: UsersRepository,
   ) {}
 
   // canActivate = Nest calls this for every request. "async" because checking the token takes a moment.
@@ -57,14 +64,23 @@ export class JwtAuthGuard implements CanActivate {
     if (!token) throw new UnauthorizedException('Missing access token');
 
     // try { ... } catch { ... } = "try this; if it throws an error, run the catch part instead".
+    let payload: JwtPayload;
     try {
       // checks the token's secret stamp (made with JWT_SECRET) and that it hasn't expired
-      // If fine, it returns the token's content; we store it on the request for later (req.user).
-      request.user = await this.jwtService.verifyAsync<JwtPayload>(token);
+      // If fine, it returns the token's content.
+      payload = await this.jwtService.verifyAsync<JwtPayload>(token);
     } catch {
       // Fake, changed or expired token -> 401.
       throw new UnauthorizedException('Invalid or expired access token');
     }
+
+    // The user as they are NOW in the database (one quick lookup by id).
+    const user = await this.usersRepository.findById(payload.sub);
+    // Account deleted since login -> 401.
+    if (!user) throw new UnauthorizedException('This account no longer exists');
+    // Store it for later (RolesGuard, @CurrentUser): the token's content, but the CURRENT role.
+    // "{ ...payload, role }" = a copy of payload with role replaced.
+    request.user = { ...payload, role: user.role };
     // Everything ok -> let the request continue (next: RolesGuard, then the controller).
     return true;
   }
